@@ -1,12 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-type DesignPhaseProps = {
-  onRestart: () => void;
-  onComplete: () => void;
-  proyectoNombre: string;
-};
+import { useState, useEffect, useRef } from "react";
 
 type PreguntaDiseno = {
   id: number;
@@ -14,33 +8,167 @@ type PreguntaDiseno = {
   opciones: [string, string, string];
 };
 
-export default function DesignPhase({ onRestart, onComplete, proyectoNombre }: DesignPhaseProps) {
+type DesignPhaseProps = {
+  onRestart: () => void;
+  onComplete: () => void;
+  proyectoNombre: string;
+  ideaOriginal: string;
+  respuestasEstrategia: Record<number, string>;
+};
+
+type EstadoCarga = "cargando" | "listo" | "error";
+
+export default function DesignPhase({
+  onRestart,
+  onComplete,
+  proyectoNombre,
+  ideaOriginal,
+  respuestasEstrategia,
+}: DesignPhaseProps) {
+  const [estado, setEstado] = useState<EstadoCarga>("cargando");
+  const [preguntas, setPreguntas] = useState<PreguntaDiseno[]>([]);
   const [preguntaIndex, setPreguntaIndex] = useState(0);
   const [progresoCarga, setProgresoCarga] = useState(0);
   const [respuestas, setRespuestas] = useState<Record<number, string>>({});
+  const [puntos, setPuntos] = useState(".");
+  const llamadaHecha = useRef(false);
 
-  const preguntasDiseno: PreguntaDiseno[] = [
-    { id: 1, pregunta: "¿Qué estilo visual define mejor tu producto?", opciones: ["Minimalista y limpio", "Moderno y tecnológico", "Cálido y humano"] },
-    { id: 2, pregunta: "¿Qué paleta de colores representa mejor tu marca?", opciones: ["Oscura y sofisticada", "Clara y profesional", "Colorida y energética"] },
-    { id: 3, pregunta: "¿Cómo preferís que se sientan los elementos de tu interfaz?", opciones: ["Redondeados y suaves", "Cuadrados y sólidos", "Mixto y equilibrado"] },
-    { id: 4, pregunta: "¿Qué prioridad tiene la interfaz para tu usuario?", opciones: ["Simplicidad ante todo", "Información densa y completa", "Visual e impactante"] }
-  ];
+  useEffect(() => {
+    if (estado !== "cargando") return;
+    const interval = setInterval(() => {
+      setPuntos((prev) => (prev.length >= 3 ? "." : prev + "."));
+    }, 400);
+    return () => clearInterval(interval);
+  }, [estado]);
+
+  useEffect(() => {
+    if (llamadaHecha.current) return;
+    llamadaHecha.current = true;
+
+    const fetchPreguntas = async () => {
+      try {
+        const res = await fetch("/api/diseno", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            proyectoNombre,
+            ideaOriginal,
+            respuestasEstrategia,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Error al contactar a PAITA");
+
+        const data = await res.json();
+        setPreguntas(data.preguntas);
+        setEstado("listo");
+      } catch {
+        setEstado("error");
+      }
+    };
+
+    fetchPreguntas();
+  }, [proyectoNombre, ideaOriginal, respuestasEstrategia]);
+
+  const handleReintentar = () => {
+    llamadaHecha.current = false;
+    setEstado("cargando");
+    setPreguntaIndex(0);
+    setRespuestas({});
+    setProgresoCarga(0);
+
+    llamadaHecha.current = true;
+    const fetchPreguntas = async () => {
+      try {
+        const res = await fetch("/api/diseno", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            proyectoNombre,
+            ideaOriginal,
+            respuestasEstrategia,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Error al contactar a PAITA");
+
+        const data = await res.json();
+        setPreguntas(data.preguntas);
+        setEstado("listo");
+      } catch {
+        setEstado("error");
+      }
+    };
+
+    fetchPreguntas();
+  };
 
   const handleSeleccionarOpcion = (opcion: string) => {
-    const preguntaActual = preguntasDiseno[preguntaIndex];
+    const preguntaActual = preguntas[preguntaIndex];
     const nuevasRespuestas = { ...respuestas, [preguntaActual.id]: opcion };
     setRespuestas(nuevasRespuestas);
 
     const siguienteIndex = preguntaIndex + 1;
-    const nuevoProgreso = Math.min((siguienteIndex / preguntasDiseno.length) * 100, 100);
+    const nuevoProgreso = Math.min((siguienteIndex / preguntas.length) * 100, 100);
     setProgresoCarga(nuevoProgreso);
 
-    if (siguienteIndex < preguntasDiseno.length) {
+    if (siguienteIndex < preguntas.length) {
       setTimeout(() => setPreguntaIndex(siguienteIndex), 300);
     } else {
       setTimeout(() => onComplete(), 800);
     }
   };
+
+  if (estado === "cargando") {
+    return (
+      <div className="w-full space-y-6 transition-all duration-500">
+        <div className="text-center space-y-1">
+          <h2 className="text-xs uppercase tracking-widest text-emerald-400 font-bold">
+            Fase 2: El Chasis Visual
+          </h2>
+          <p className="text-sm text-neutral-400 font-medium">
+            Configurando la identidad de <span className="text-neutral-200">{proyectoNombre}</span>
+          </p>
+        </div>
+        <div className="bg-neutral-900/80 border border-neutral-800/80 p-8 rounded-xl w-full shadow-2xl flex flex-col items-center justify-center gap-4 min-h-[200px]">
+          <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-mono text-violet-400">
+            PAITA está diseñando tu interfaz{puntos}
+          </p>
+          <p className="text-xs text-neutral-600 text-center max-w-xs">
+            Esto puede tardar unos segundos
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (estado === "error") {
+    return (
+      <div className="w-full space-y-6 transition-all duration-500">
+        <div className="text-center space-y-1">
+          <h2 className="text-xs uppercase tracking-widest text-emerald-400 font-bold">
+            Fase 2: El Chasis Visual
+          </h2>
+          <p className="text-sm text-neutral-400 font-medium">
+            Configurando la identidad de <span className="text-neutral-200">{proyectoNombre}</span>
+          </p>
+        </div>
+        <div className="bg-neutral-900/80 border border-red-800/50 p-8 rounded-xl w-full shadow-2xl flex flex-col items-center justify-center gap-4 min-h-[200px]">
+          <p className="text-sm text-red-400 font-mono">Error al conectar con PAITA</p>
+          <p className="text-xs text-neutral-500 text-center max-w-xs">
+            No se pudieron generar las preguntas de diseño. Intentá de nuevo.
+          </p>
+          <button
+            onClick={handleReintentar}
+            className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs px-4 py-2 rounded-lg transition-all"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6 transition-all duration-500">
@@ -70,14 +198,14 @@ export default function DesignPhase({ onRestart, onComplete, proyectoNombre }: D
         <div className="space-y-4 pt-2">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono text-violet-500/60">
-              {preguntaIndex + 1}/{preguntasDiseno.length}
+              {preguntaIndex + 1}/{preguntas.length}
             </span>
           </div>
           <h3 className="text-md font-semibold text-neutral-200">
-            {preguntasDiseno[preguntaIndex]?.pregunta}
+            {preguntas[preguntaIndex]?.pregunta}
           </h3>
           <div className="grid grid-cols-1 gap-2.5">
-            {preguntasDiseno[preguntaIndex]?.opciones.map((opcion, idx) => (
+            {preguntas[preguntaIndex]?.opciones.map((opcion, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSeleccionarOpcion(opcion)}

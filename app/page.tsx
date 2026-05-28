@@ -35,7 +35,6 @@ export default function Home() {
   const handleCalibrationComplete = (datos: DatosEstrategia) => {
     setDatosEstrategia(datos);
 
-    // Guardar en historial
     const nuevoProyecto: Proyecto = {
       nombre: datos.proyectoNombre,
       idea: ideaOriginal,
@@ -87,6 +86,8 @@ export default function Home() {
               onRestart={reiniciarImpresora}
               onComplete={() => setFaseActual("motores")}
               proyectoNombre={datosEstrategia?.proyectoNombre ?? ""}
+              ideaOriginal={ideaOriginal}
+              respuestasEstrategia={datosEstrategia?.respuestas ?? {}}
             />
           )}
 
