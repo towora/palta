@@ -10,7 +10,7 @@ type PreguntaDiseno = {
 
 type DesignPhaseProps = {
   onRestart: () => void;
-  onComplete: () => void;
+  onComplete: (respuestas: Record<number, string>) => void;
   proyectoNombre: string;
   ideaOriginal: string;
   respuestasEstrategia: Record<number, string>;
@@ -115,7 +115,7 @@ export default function DesignPhase({
     if (siguienteIndex < preguntas.length) {
       setTimeout(() => setPreguntaIndex(siguienteIndex), 300);
     } else {
-      setTimeout(() => onComplete(), 800);
+      setTimeout(() => onComplete(nuevasRespuestas), 800);
     }
   };
 

@@ -14,12 +14,16 @@ type DatosEstrategia = {
   respuestas: Record<number, string>;
 };
 
+type DatosDiseno = {
+  respuestas: Record<number, string>;
+};
+
 export default function Home() {
   const [faseActual, setFaseActual] = useState<"inicio" | "estrategia" | "diseno" | "motores" | "imprimir">("inicio");
   const [ideaOriginal, setIdeaOriginal] = useState("");
   const [datosEstrategia, setDatosEstrategia] = useState<DatosEstrategia | null>(null);
+  const [datosDiseno, setDatosDiseno] = useState<DatosDiseno | null>(null);
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
-  const [proyectoActivo, setProyectoActivo] = useState<Proyecto | null>(null);
 
   useEffect(() => {
     const guardados = localStorage.getItem("palta-proyectos");
@@ -30,6 +34,7 @@ export default function Home() {
     setFaseActual("inicio");
     setIdeaOriginal("");
     setDatosEstrategia(null);
+    setDatosDiseno(null);
   };
 
   const handleCalibrationComplete = (datos: DatosEstrategia) => {
@@ -47,12 +52,17 @@ export default function Home() {
     setFaseActual("diseno");
   };
 
+  const handleDisenoComplete = (respuestas: Record<number, string>) => {
+    setDatosDiseno({ respuestas });
+    setFaseActual("motores");
+  };
+
   return (
     <div className="flex h-screen bg-neutral-950 text-neutral-100 font-sans overflow-hidden select-none">
 
       <Sidebar
         proyectos={proyectos}
-        onSelectProyecto={setProyectoActivo}
+        onSelectProyecto={() => {}}
       />
 
       <main className="flex-1 flex flex-col overflow-y-auto relative">
@@ -84,7 +94,7 @@ export default function Home() {
           {faseActual === "diseno" && (
             <DesignPhase
               onRestart={reiniciarImpresora}
-              onComplete={() => setFaseActual("motores")}
+              onComplete={handleDisenoComplete}
               proyectoNombre={datosEstrategia?.proyectoNombre ?? ""}
               ideaOriginal={ideaOriginal}
               respuestasEstrategia={datosEstrategia?.respuestas ?? {}}
@@ -94,6 +104,9 @@ export default function Home() {
           {faseActual === "motores" && (
             <MotorsPhase
               proyectoNombre={datosEstrategia?.proyectoNombre ?? ""}
+              ideaOriginal={ideaOriginal}
+              respuestasEstrategia={datosEstrategia?.respuestas ?? {}}
+              respuestasDiseno={datosDiseno?.respuestas ?? {}}
               onComplete={() => setFaseActual("imprimir")}
               onBack={() => setFaseActual("diseno")}
             />

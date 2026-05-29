@@ -353,3 +353,74 @@ Contexto estratégico: ${JSON.stringify(respuestasEstrategia, null, 2)}`,
     throw new Error("Error desconocido al generar preguntas de diseño");
   }
 }
+export type PreguntaMotores = {
+  id: number;
+  pregunta: string;
+  opciones: [string, string, string];
+};
+
+export type RespuestaMotores = {
+  preguntas: PreguntaMotores[];
+};
+
+const SYSTEM_PROMPT_MOTORES = `Sos PAITA, el orquestador de PALTA.
+
+Tu tarea es generar preguntas sobre los motores técnicos de un producto digital basándote en su contexto completo.
+
+EJES QUE DEBÉS CUBRIR:
+1. Autenticación y usuarios
+2. Almacenamiento de datos
+3. Pagos y monetización
+4. Integraciones externas necesarias
+5. Escalabilidad inicial
+
+REGLAS OBLIGATORIAS:
+- Respondé ÚNICAMENTE con un objeto JSON válido, sin markdown, sin texto adicional.
+- Generá entre 4 y 6 preguntas contextuales según el tipo de producto.
+- Cada pregunta debe tener exactamente 3 opciones claras y técnicamente distintas.
+- Los ids deben ser números secuenciales empezando en 1.
+- No preguntes sobre algo que ya esté claro en el contexto estratégico.
+
+Estructura exacta requerida:
+{
+  "preguntas": [
+    { "id": 1, "pregunta": "string", "opciones": ["string", "string", "string"] }
+  ]
+}`;
+
+export async function generarPreguntasMotores(
+  proyectoNombre: string,
+  ideaOriginal: string,
+  respuestasEstrategia: Record<number, string>,
+  respuestasDiseno: Record<number, string>
+): Promise<RespuestaMotores> {
+  try {
+    const raw = await llamarOpenRouter(
+      SYSTEM_PROMPT_MOTORES,
+      `Proyecto: "${proyectoNombre}"
+Idea original: "${ideaOriginal}"
+Contexto estratégico: ${JSON.stringify(respuestasEstrategia, null, 2)}
+Contexto de diseño: ${JSON.stringify(respuestasDiseno, null, 2)}`,
+      MODEL_ESTRATEGIA
+    );
+
+    const parsed = parseJsonResponse<unknown>(raw);
+
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("Respuesta inválida");
+    }
+
+    const respuesta = parsed as RespuestaMotores;
+
+    if (!Array.isArray(respuesta.preguntas) || respuesta.preguntas.length === 0) {
+      throw new Error("Falta el array preguntas");
+    }
+
+    return respuesta;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error al generar preguntas de motores: ${error.message}`);
+    }
+    throw new Error("Error desconocido al generar preguntas de motores");
+  }
+}
