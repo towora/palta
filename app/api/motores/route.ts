@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 import { NextResponse } from "next/server";
 import { generarPreguntasMotores } from "@/lib/ai";
 
@@ -10,7 +12,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Faltan datos requeridos" },
         { status: 400 }
-      );
+      );  
     }
 
     const resultado = await generarPreguntasMotores(
