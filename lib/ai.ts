@@ -106,12 +106,15 @@ async function llamarOpenRouter(
 ): Promise<string> {
   const apiKey = getApiKey();
   const modelos = [
-    model,
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "deepseek/deepseek-v4-flash:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "qwen/qwen3-coder:free",
-  ];
+  model,
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "deepseek/deepseek-v4-flash:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "qwen/qwen3-coder:free",
+  "google/gemma-4-31b-it:free",
+  "z-ai/glm-4.5-air:free",
+  "openai/gpt-oss-20b:free",
+];
 
   for (const modeloActual of modelos) {
     const response = await fetch(OPENROUTER_API_URL, {
