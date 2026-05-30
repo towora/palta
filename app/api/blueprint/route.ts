@@ -4,46 +4,37 @@ import { generarBlueprint } from "@/lib/ai";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const { idea, proyectoNombre, respuestasEstrategia, respuestasDiseno, respuestasMotores } = body;
 
-    if (!body?.idea || typeof body.idea !== "string" || !body.idea.trim()) {
+    if (!idea || typeof idea !== "string" || !idea.trim()) {
       return NextResponse.json(
-        { error: "Se requiere un campo 'idea' de tipo string no vacío" },
+        { error: "Se requiere el campo 'idea'" },
         { status: 400 }
       );
     }
 
-    if (
-      !body?.respuestas ||
-      typeof body.respuestas !== "object" ||
-      Array.isArray(body.respuestas) ||
-      Object.keys(body.respuestas).length === 0
-    ) {
-      return NextResponse.json(
-        { error: "Se requiere un campo 'respuestas' como objeto no vacío" },
-        { status: 400 }
-      );
-    }
+    // Combinar todas las respuestas en un solo objeto para el blueprint
+    const respuestasCompletas: Record<string, string> = {
+      ...Object.fromEntries(
+        Object.entries(respuestasEstrategia ?? {}).map(([k, v]) => [`estrategia_${k}`, v as string])
+      ),
+      ...Object.fromEntries(
+        Object.entries(respuestasDiseno ?? {}).map(([k, v]) => [`diseno_${k}`, v as string])
+      ),
+      ...Object.fromEntries(
+        Object.entries(respuestasMotores ?? {}).map(([k, v]) => [`motores_${k}`, v as string])
+      ),
+    };
 
-    const respuestas = body.respuestas as Record<string, string>;
-
-    for (const [clave, valor] of Object.entries(respuestas)) {
-      if (typeof valor !== "string") {
-        return NextResponse.json(
-          { error: `La respuesta "${clave}" debe ser un string` },
-          { status: 400 }
-        );
-      }
-    }
-
-    const resultado = await generarBlueprint(body.idea, respuestas);
+    const resultado = await generarBlueprint(
+      `${proyectoNombre ? proyectoNombre + ": " : ""}${idea}`,
+      respuestasCompletas
+    );
 
     return NextResponse.json(resultado);
   } catch (error) {
-    const mensaje =
-      error instanceof Error
-        ? error.message
-        : "Error desconocido al generar blueprint";
-
+    const mensaje = error instanceof Error ? error.message : "Error desconocido";
+    console.error("Error en /api/blueprint:", error);
     return NextResponse.json({ error: mensaje }, { status: 500 });
   }
 }

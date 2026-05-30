@@ -13,7 +13,7 @@ interface MotorsPhaseProps {
   ideaOriginal: string;
   respuestasEstrategia: Record<number, string>;
   respuestasDiseno: Record<number, string>;
-  onComplete?: () => void;
+  onComplete?: (respuestas: Record<number, string>) => void;
   onBack?: () => void;
 }
 
@@ -219,7 +219,7 @@ export default function MotorsPhase({
             )}
             {onComplete && (
               <button
-                onClick={onComplete}
+                onClick={() => onComplete(respuestas)}
                 className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-neutral-950 font-bold py-3 rounded-lg text-sm transition-all duration-300 shadow-lg shadow-emerald-500/10 active:scale-[0.99]"
               >
                 Ir a Imprimir Proyecto →

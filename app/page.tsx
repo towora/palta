@@ -18,11 +18,16 @@ type DatosDiseno = {
   respuestas: Record<number, string>;
 };
 
+type DatosMotores = {
+  respuestas: Record<number, string>;
+};
+
 export default function Home() {
   const [faseActual, setFaseActual] = useState<"inicio" | "estrategia" | "diseno" | "motores" | "imprimir">("inicio");
   const [ideaOriginal, setIdeaOriginal] = useState("");
   const [datosEstrategia, setDatosEstrategia] = useState<DatosEstrategia | null>(null);
   const [datosDiseno, setDatosDiseno] = useState<DatosDiseno | null>(null);
+  const [datosMotores, setDatosMotores] = useState<DatosMotores | null>(null);
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
 
   useEffect(() => {
@@ -35,6 +40,7 @@ export default function Home() {
     setIdeaOriginal("");
     setDatosEstrategia(null);
     setDatosDiseno(null);
+    setDatosMotores(null);
   };
 
   const handleCalibrationComplete = (datos: DatosEstrategia) => {
@@ -55,6 +61,11 @@ export default function Home() {
   const handleDisenoComplete = (respuestas: Record<number, string>) => {
     setDatosDiseno({ respuestas });
     setFaseActual("motores");
+  };
+
+  const handleMotoresComplete = (respuestas: Record<number, string>) => {
+    setDatosMotores({ respuestas });
+    setFaseActual("imprimir");
   };
 
   return (
@@ -107,7 +118,7 @@ export default function Home() {
               ideaOriginal={ideaOriginal}
               respuestasEstrategia={datosEstrategia?.respuestas ?? {}}
               respuestasDiseno={datosDiseno?.respuestas ?? {}}
-              onComplete={() => setFaseActual("imprimir")}
+              onComplete={handleMotoresComplete}
               onBack={() => setFaseActual("diseno")}
             />
           )}
@@ -115,6 +126,10 @@ export default function Home() {
           {faseActual === "imprimir" && (
             <PrintPhase
               proyectoNombre={datosEstrategia?.proyectoNombre ?? ""}
+              ideaOriginal={ideaOriginal}
+              respuestasEstrategia={datosEstrategia?.respuestas ?? {}}
+              respuestasDiseno={datosDiseno?.respuestas ?? {}}
+              respuestasMotores={datosMotores?.respuestas ?? {}}
               onRestart={reiniciarImpresora}
             />
           )}
