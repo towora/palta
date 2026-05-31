@@ -11,7 +11,7 @@ type AuthModalProps = {
 type AuthMode = "login" | "registro";
 
 export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
-  const [modo, setModo] = useState<AuthMode>("login");
+    const [modo, setModo] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -32,8 +32,10 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
 
     try {
       if (modo === "registro") {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
+        const { data, error } = await supabase.auth.signUp({ email, password });
+console.log("Signup data:", data);
+console.log("Signup error:", error);
+if (error) throw error;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
