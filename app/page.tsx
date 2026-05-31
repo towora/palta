@@ -34,9 +34,9 @@ export default function Home() {
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [mostrarAuth, setMostrarAuth] = useState(false);
+  const [mostrarLimite, setMostrarLimite] = useState(false);
   const [cargandoAuth, setCargandoAuth] = useState(true);
 
-  // Verificar sesión al cargar
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -52,7 +52,6 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Cargar proyectos del usuario
   useEffect(() => {
     if (!user) {
       const guardados = localStorage.getItem("palta-proyectos");
@@ -79,11 +78,22 @@ export default function Home() {
     setDatosMotores(null);
   };
 
-  const handleAlimentar = () => {
+  const handleAlimentar = async () => {
     if (!user) {
       setMostrarAuth(true);
       return;
     }
+
+    const { count } = await supabase
+      .from("proyectos")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    if (count !== null && count >= 2) {
+      setMostrarLimite(true);
+      return;
+    }
+
     setFaseActual("estrategia");
   };
 
@@ -151,6 +161,36 @@ export default function Home() {
             setFaseActual("estrategia");
           }}
         />
+      )}
+
+      {mostrarLimite && (
+        <div className="fixed inset-0 bg-neutral-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 w-full max-w-sm shadow-2xl space-y-5 text-center">
+            <div className="text-4xl">🔒</div>
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold text-neutral-100">
+                Límite alcanzado
+              </h2>
+              <p className="text-xs text-neutral-500">
+                El plan gratuito incluye 2 proyectos. Actualizá a Pro para proyectos ilimitados.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => setMostrarLimite(false)}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-neutral-950 font-bold py-3 rounded-lg text-sm transition-all"
+              >
+                Entendido
+              </button>
+              <button
+                onClick={() => setMostrarLimite(false)}
+                className="w-full text-xs text-neutral-600 hover:text-neutral-400 transition-all py-1"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <Sidebar
